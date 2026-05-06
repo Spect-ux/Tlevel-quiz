@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz — T Level Digital Legislation</title>
+  <meta name="description" content="AI-powered legislation exam practice for T Level Digital Software Development." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ─── NAV ─────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">T<span>Level</span>.quiz</a>
+    <div class="nav-links">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link active" href="quiz.html">Quiz</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="apiStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--wrong);transition:background 0.3s"></div>
+        <span id="apiStatusText" style="font-size:0.7rem;color:var(--wrong)">No API key</span>
+      </div>
+      <button class="nav-btn" onclick="openApiModal()">⚙ API Key</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- ─── SETUP SECTION ───────────────────────────────────── -->
+  <section id="setupSection" style="padding:60px 0 40px">
+
+    <div class="section-header">
+      <h2>Configure your quiz</h2>
+      <div class="line"></div>
+    </div>
+
+    <!-- Topic picker -->
+    <p style="font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);margin-bottom:16px">
+      Select topics — <span style="color:var(--accent)">click to toggle</span>
+    </p>
+    <div class="topic-grid" id="topicGrid"></div>
+
+    <!-- Options row -->
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:32px">
+      <div>
+        <label style="font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);display:block;margin-bottom:8px">
+          Number of questions
+        </label>
+        <input
+          type="number"
+          id="qCountInput"
+          value="5"
+          min="1"
+          max="20"
+          style="
+            width:100px;
+            background:var(--card);
+            border:1px solid var(--border2);
+            border-radius:var(--radius);
+            padding:10px 14px;
+            color:var(--text);
+            font-family:var(--font-mono);
+            font-size:0.9rem;
+            outline:none;
+          "
+        />
+      </div>
+      <div style="margin-top:22px">
+        <p style="font-size:0.72rem;color:var(--muted)">Max 20 questions per session</p>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="startBtn" style="font-size:0.88rem;padding:14px 36px">
+      Start Quiz →
+    </button>
+    <p style="margin-top:14px;font-size:0.72rem;color:var(--muted)">
+      Questions are generated fresh by Claude each session. Make sure your API key is saved first.
+    </p>
+  </section>
+
+  <!-- ─── QUIZ SCREEN ──────────────────────────────────────── -->
+  <section class="quiz-wrap" id="quizWrap">
+
+    <!-- Top bar -->
+    <div class="quiz-topbar">
+      <div class="quiz-progress">
+        <div class="progress-dots" id="progressDots"></div>
+      </div>
+      <div class="quiz-score-pill" id="scoreDisplay">Score: <span>0</span></div>
+    </div>
+
+    <!-- Question card -->
+    <div class="q-card">
+      <div class="q-number" id="qNumber">Q1</div>
+      <div class="q-topic-pill" id="qTopic">Loading...</div>
+      <div class="q-text loading" id="qText">Generating question...</div>
+
+      <textarea
+        class="answer-area"
+        id="answerArea"
+        placeholder="Write your answer here — aim for the level of detail you'd give in the real exam..."
+        disabled
+      ></textarea>
+
+      <div class="q-actions">
+        <button class="btn btn-primary" id="submitBtn" disabled>Submit Answer</button>
+        <button class="btn btn-ghost hidden" id="nextBtn">Next →</button>
+      </div>
+
+      <!-- Feedback panel -->
+      <div class="feedback-panel" id="feedbackPanel">
+        <div class="feedback-header ai">
+          🤖 AI Feedback
+        </div>
+        <div class="feedback-body" id="feedbackBody"></div>
+
+        <div class="model-answer-box">
+          <div class="model-answer-label">Model Answer</div>
+          <div id="modelAnswerText"></div>
+        </div>
+
+        <div class="self-rate hidden" id="selfRateSection">
+          <p>How well did your answer match?</p>
+          <div class="rate-row">
+            <button class="rate-btn" onclick="rateAnswer('good')">✓ Got it</button>
+            <button class="rate-btn" onclick="rateAnswer('partial')">~ Partial</button>
+            <button class="rate-btn" onclick="rateAnswer('fail')">✗ Missed it</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── RESULTS SCREEN ───────────────────────────────────── -->
+  <section class="results-screen" id="resultsScreen">
+    <div class="results-hero">
+      <div class="score-label">Your Score</div>
+      <div class="score-num" id="scoreBig">0/0</div>
+      <div class="score-msg" id="scoreMsg"></div>
+    </div>
+
+    <div class="section-header">
+      <h2>Breakdown</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="results-grid" id="resultsGrid"></div>
+
+    <div class="results-actions">
+      <button class="btn btn-primary" onclick="retakeQuiz()">Try again (same topics)</button>
+      <button class="btn btn-ghost" onclick="retryQuiz()">Change topics</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ─── FOOTER ────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <p>T Level Digital Software Development · Content Area 4 · Pearson Specification</p>
+    <p>Powered by <a href="https://anthropic.com" target="_blank">Claude</a> (Anthropic) · Made with ❤️ by Spect &amp; Claude</p>
+    <span class="footer-tag">v1.0</span>
+  </div>
+</footer>
+
+<!-- ─── API KEY MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeApiModal()">✕</button>
+    <h3>Anthropic API Key</h3>
+    <p class="modal-sub">
+      Your key is stored only in your browser's localStorage — never sent anywhere except directly to Anthropic's API.
+    </p>
+    <label for="apiKeyInput">API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
+    <p class="modal-note">
+      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
+      Each quiz uses a small number of API credits (~£0.01–0.05 per session).
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="saveKeyBtn">Save Key</button>
+      <button class="btn btn-ghost" id="clearKeyBtn">Clear Key</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

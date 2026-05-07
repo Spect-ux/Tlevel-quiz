@@ -1,173 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>T Level Digital — Legislation Quiz</title>
-  <meta name="description" content="AI-powered exam practice for T Level Digital Software Development — Content Area 4: Legislation & Regulatory Requirements." />
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>T Level Digital — Exam Quiz</title>
+  <meta name="description" content="Free AI-powered exam practice for T Level Digital Software Development. Full spec coverage — Core Papers 1 & 2."/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-
-<!-- ─── NAV ─────────────────────────────────────────────── -->
 <nav>
   <div class="nav-inner">
     <a class="nav-logo" href="index.html">T<span>Level</span>.quiz</a>
     <div class="nav-links">
       <a class="nav-link active" href="index.html">Home</a>
       <a class="nav-link" href="quiz.html">Quiz</a>
-      <a class="nav-link" href="#about">About</a>
     </div>
     <button class="nav-btn" onclick="openApiModal()">⚙ API Key</button>
   </div>
 </nav>
 
-<!-- ─── HERO ─────────────────────────────────────────────── -->
 <div class="page-wrap">
   <section class="hero">
-    <div class="hero-tag">AI-Powered Exam Practice</div>
-    <h1>
-      Ace your legislation
-      <span class="line2">exam.</span>
-    </h1>
+    <div class="hero-tag">T Level Digital · Full Spec Coverage</div>
+    <h1>Revise smarter.<br><span class="accent">Ace the core paper.</span></h1>
     <p class="hero-desc">
-      AI-generated exam questions for T Level Digital Software Development — 
-      Content Area 4: Legislation &amp; Regulatory Requirements.<br>
-      Write your answers, get AI feedback, track your progress.
+      AI-generated exam questions for every topic in the T Level Digital Software Development spec —
+      Core Papers 1 &amp; 2. Free to use. No sign-up needed.
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="quiz.html">Start Quiz →</a>
-      <a class="btn btn-ghost" href="#about">How it works</a>
+      <a class="btn btn-ghost" href="#how">How it works</a>
     </div>
   </section>
 
-  <!-- ─── FEATURES ──────────────────────────────────────── -->
-  <div class="features" style="animation-delay:0.1s">
-    <div class="feature-card" style="animation-delay:0.15s">
-      <div class="feature-icon">🤖</div>
-      <div class="feature-title">AI-Generated Questions</div>
-      <div class="feature-desc">Claude generates fresh exam-style questions every session — no two quizzes are the same.</div>
+  <div class="feature-grid">
+    <div class="feat">
+      <div class="feat-icon">🆓</div>
+      <div class="feat-title">Completely Free</div>
+      <div class="feat-desc">Copy the generated prompt, paste into Claude.ai (free tier), paste the JSON back. Zero cost, zero sign-up.</div>
     </div>
-    <div class="feature-card" style="animation-delay:0.2s">
-      <div class="feature-icon">✍️</div>
-      <div class="feature-title">Real Written Answers</div>
-      <div class="feature-desc">Type your answer just like the real exam. No multiple choice shortcuts.</div>
+    <div class="feat">
+      <div class="feat-icon">📚</div>
+      <div class="feat-title">Full Spec — Both Papers</div>
+      <div class="feat-desc">Every content area from Core Paper 1 and Core Paper 2. Algorithms, legislation, databases, networks, security and more.</div>
     </div>
-    <div class="feature-card" style="animation-delay:0.25s">
-      <div class="feature-icon">📋</div>
-      <div class="feature-title">Instant AI Feedback</div>
-      <div class="feature-desc">Get personalised feedback on your answer plus a model answer to compare against.</div>
+    <div class="feat">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title">Fresh Questions Every Time</div>
+      <div class="feat-desc">Claude generates new exam-style questions on the fly — no two sessions are the same.</div>
     </div>
-    <div class="feature-card" style="animation-delay:0.3s">
-      <div class="feature-icon">🎯</div>
-      <div class="feature-title">Pick Your Topics</div>
-      <div class="feature-desc">Focus on GDPR, Computer Misuse Act, Equality, IP, or all 10 spec topics at once.</div>
+    <div class="feat">
+      <div class="feat-icon">✍️</div>
+      <div class="feat-title">Written Answers Only</div>
+      <div class="feat-desc">No multiple choice. Type your answer just like the real exam and compare to the model answer.</div>
     </div>
-    <div class="feature-card" style="animation-delay:0.35s">
-      <div class="feature-icon">📈</div>
-      <div class="feature-title">Track Your Score</div>
-      <div class="feature-desc">Self-rate each answer and see a breakdown of where you lost and gained marks.</div>
+    <div class="feat">
+      <div class="feat-icon">🎯</div>
+      <div class="feat-title">Pick Your Topics</div>
+      <div class="feat-desc">Focus on your weak areas or mix everything together. You decide what gets tested.</div>
     </div>
-    <div class="feature-card" style="animation-delay:0.4s">
-      <div class="feature-icon">🔒</div>
-      <div class="feature-title">Your Key, Your Data</div>
-      <div class="feature-desc">Your Anthropic API key stays in your browser only — never sent anywhere else.</div>
+    <div class="feat">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">API Mode (Optional)</div>
+      <div class="feat-desc">Have an Anthropic API key? Enable auto-mode for instant questions and AI marking without copy-pasting.</div>
     </div>
   </div>
 
-  <!-- ─── TOPICS ────────────────────────────────────────── -->
-  <div id="about">
-    <div class="section-header">
-      <h2>Topics Covered</h2>
+  <div id="how">
+    <div class="section-hdr">
+      <h2>How Free Mode works</h2>
       <div class="line"></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:60px">
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Data Protection / GDPR</div>
-        <div class="t-ref">4.1.3</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:56px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center">
+        <div style="font-size:2rem;margin-bottom:12px">1️⃣</div>
+        <div style="font-family:var(--fh);font-weight:700;margin-bottom:6px">Pick topics &amp; count</div>
+        <div style="font-size:.78rem;color:var(--muted2)">Select which spec areas to test and how many questions you want</div>
       </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Computer Misuse Act</div>
-        <div class="t-ref">4.1.4</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center">
+        <div style="font-size:2rem;margin-bottom:12px">2️⃣</div>
+        <div style="font-family:var(--fh);font-weight:700;margin-bottom:6px">Copy the prompt</div>
+        <div style="font-size:.78rem;color:var(--muted2)">One click copies a ready-made prompt engineered to get perfect JSON back</div>
       </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Health & Safety (DSE)</div>
-        <div class="t-ref">4.1.1–2</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center">
+        <div style="font-size:2rem;margin-bottom:12px">3️⃣</div>
+        <div style="font-family:var(--fh);font-weight:700;margin-bottom:6px">Paste into Claude.ai</div>
+        <div style="font-size:.78rem;color:var(--muted2)">Open <a href="https://claude.ai" target="_blank" style="color:var(--accent)">claude.ai</a> (free), paste the prompt, copy the JSON it returns</div>
       </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Equality Act</div>
-        <div class="t-ref">4.1.5</div>
-      </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Intellectual Property</div>
-        <div class="t-ref">4.1.6</div>
-      </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">International Law / Cyberspace</div>
-        <div class="t-ref">4.1.8</div>
-      </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">BCS Code of Conduct</div>
-        <div class="t-ref">4.2.1–2</div>
-      </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Acceptable Use Policy</div>
-        <div class="t-ref">4.2.4</div>
-      </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Industry Standards (ISO/WCAG)</div>
-        <div class="t-ref">4.2.3</div>
-      </div>
-      <div class="topic-card selected" style="cursor:default">
-        <div class="t-check">✓</div>
-        <div class="t-name">Legislation Impact on Society</div>
-        <div class="t-ref">4.1.7</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center">
+        <div style="font-size:2rem;margin-bottom:12px">4️⃣</div>
+        <div style="font-family:var(--fh);font-weight:700;margin-bottom:6px">Paste &amp; go</div>
+        <div style="font-size:.78rem;color:var(--muted2)">Paste the JSON into the site — your quiz loads instantly</div>
       </div>
     </div>
   </div>
 
-  <!-- ─── CTA ───────────────────────────────────────────── -->
-  <div style="text-align:center;padding:60px 0 80px">
-    <p style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:20px">Ready to practice?</p>
-    <a class="btn btn-primary" href="quiz.html" style="font-size:0.9rem;padding:16px 40px">Launch Quiz →</a>
+  <div style="text-align:center;padding:40px 0 80px">
+    <a class="btn btn-primary" href="quiz.html" style="font-size:.9rem;padding:16px 40px">Launch Quiz →</a>
   </div>
 </div>
 
-<!-- ─── FOOTER ────────────────────────────────────────────── -->
 <footer>
   <div class="footer-inner">
-    <p>Built for T Level Digital Software Development · Pearson Spec · Content Area 4</p>
-    <p>Powered by <a href="https://anthropic.com" target="_blank">Claude</a> (Anthropic) · Made by Spect &amp; Claude</p>
-    <span class="footer-tag">v1.0</span>
+    <p>T Level Digital Software Development · Pearson Spec · Core Papers 1 &amp; 2</p>
+    <p>Powered by <a href="https://anthropic.com" target="_blank">Claude</a> (Anthropic) · Made with ❤️ by Spect &amp; Claude</p>
+    <span class="footer-tag">v2.0</span>
   </div>
 </footer>
 
-<!-- ─── API KEY MODAL ──────────────────────────────────────── -->
 <div class="modal-overlay" id="apiModal">
   <div class="modal">
     <button class="modal-close" onclick="closeApiModal()">✕</button>
     <h3>Anthropic API Key</h3>
-    <p class="modal-sub">
-      Your key is stored only in your browser's localStorage — it is never sent to any server other than Anthropic's API directly.
-    </p>
+    <p class="modal-sub">Optional — enables auto question generation and AI marking without copy-pasting. Your key is stored in your browser only, never in the source code.</p>
     <label for="apiKeyInput">API Key</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
-    <p class="modal-note">
-      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
-      Each quiz session uses a small number of API credits (~£0.01–0.05).
-    </p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off"/>
+    <p class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Each session costs roughly £0.01–0.05.</p>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="saveKeyBtn">Save Key</button>
-      <button class="btn btn-ghost" id="clearKeyBtn">Clear Key</button>
+      <button class="btn btn-primary btn-sm" id="saveKeyBtn">Save Key</button>
+      <button class="btn btn-ghost btn-sm" id="clearKeyBtn">Clear</button>
     </div>
   </div>
 </div>

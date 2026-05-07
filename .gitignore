@@ -1,18 +1,8 @@
-# Never commit API keys or secrets
 .env
 .env.local
 *.env
-
-# If you ever test with a local key hardcoded, add those files here:
-# js/local-config.js
-
-# OS files
 .DS_Store
 Thumbs.db
-
-# Editor
 .vscode/
 .idea/
-
-# Node (if you ever add a build step)
 node_modules/

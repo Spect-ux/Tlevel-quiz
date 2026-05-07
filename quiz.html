@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz — T Level Digital Legislation</title>
-  <meta name="description" content="AI-powered legislation exam practice for T Level Digital Software Development." />
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz — T Level Digital</title>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-
-<!-- ─── NAV ─────────────────────────────────────────────── -->
 <nav>
   <div class="nav-inner">
     <a class="nav-logo" href="index.html">T<span>Level</span>.quiz</a>
@@ -17,10 +14,10 @@
       <a class="nav-link" href="index.html">Home</a>
       <a class="nav-link active" href="quiz.html">Quiz</a>
     </div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="display:flex;align-items:center;gap:6px">
-        <div id="apiStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--wrong);transition:background 0.3s"></div>
-        <span id="apiStatusText" style="font-size:0.7rem;color:var(--wrong)">No API key</span>
+    <div class="nav-right">
+      <div class="api-status">
+        <div class="api-dot" id="apiDot" style="background:var(--wrong)"></div>
+        <span class="api-label" id="apiLabel" style="color:var(--wrong)">No API key</span>
       </div>
       <button class="nav-btn" onclick="openApiModal()">⚙ API Key</button>
     </div>
@@ -29,165 +26,215 @@
 
 <div class="page-wrap">
 
-  <!-- ─── SETUP SECTION ───────────────────────────────────── -->
-  <section id="setupSection" style="padding:60px 0 40px">
+  <!-- ── SETUP ──────────────────────────────────────────────── -->
+  <section id="setupSection" style="padding:50px 0 60px">
 
-    <div class="section-header">
+    <div class="section-hdr" style="padding-top:0">
       <h2>Configure your quiz</h2>
       <div class="line"></div>
     </div>
 
-    <!-- Topic picker -->
-    <p style="font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);margin-bottom:16px">
-      Select topics — <span style="color:var(--accent)">click to toggle</span>
+    <!-- Mode tabs -->
+    <p style="font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);margin-bottom:10px">Mode</p>
+    <div class="tabs" style="margin-bottom:24px">
+      <button class="tab-btn active" id="tabFree" onclick="setMode('free')">🆓 Free (copy-paste)</button>
+      <button class="tab-btn" id="tabApi" onclick="setMode('api')">⚡ API (auto)</button>
+    </div>
+
+    <!-- Free mode info -->
+    <div id="freePanel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:24px;font-size:.8rem;color:var(--muted2);line-height:1.6">
+      <strong style="color:var(--accent)">Free mode:</strong> Pick your topics → click Start → copy the prompt → paste into
+      <a href="https://claude.ai" target="_blank" style="color:var(--accent)">claude.ai</a> (free) → paste the JSON back here → quiz loads. No API key needed.
+    </div>
+
+    <!-- API mode info -->
+    <div id="apiPanel" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:24px;font-size:.8rem;color:var(--muted2);line-height:1.6">
+      <strong style="color:var(--accent)">API mode:</strong> Questions generate automatically and you get AI feedback on your answers. Requires an Anthropic API key (~£0.01–0.05 per session).
+    </div>
+
+    <!-- Topics -->
+    <p style="font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);margin-bottom:10px">
+      Topics — <span style="color:var(--accent)">click to toggle</span>
+      &nbsp;·&nbsp;
+      <span style="cursor:pointer;color:var(--accent4)" onclick="selectAll()">Select all</span>
+      &nbsp;·&nbsp;
+      <span style="cursor:pointer;color:var(--accent4)" onclick="selectNone()">Clear all</span>
     </p>
     <div class="topic-grid" id="topicGrid"></div>
 
-    <!-- Options row -->
-    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:32px">
+    <!-- Count + start -->
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:20px">
       <div>
-        <label style="font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);display:block;margin-bottom:8px">
-          Number of questions
-        </label>
-        <input
-          type="number"
-          id="qCountInput"
-          value="5"
-          min="1"
-          max="20"
-          style="
-            width:100px;
-            background:var(--card);
-            border:1px solid var(--border2);
-            border-radius:var(--radius);
-            padding:10px 14px;
-            color:var(--text);
-            font-family:var(--font-mono);
-            font-size:0.9rem;
-            outline:none;
-          "
-        />
+        <label style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);display:block;margin-bottom:7px">Questions</label>
+        <input type="number" id="qCountInput" value="5" min="1" max="20"
+          style="width:90px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;color:var(--text);font-family:var(--fm);font-size:.9rem;outline:none"/>
       </div>
-      <div style="margin-top:22px">
-        <p style="font-size:0.72rem;color:var(--muted)">Max 20 questions per session</p>
-      </div>
+      <div style="margin-top:20px;font-size:.72rem;color:var(--muted)">Max 20 per session · More = more tokens used</div>
     </div>
 
-    <button class="btn btn-primary" id="startBtn" style="font-size:0.88rem;padding:14px 36px">
-      Start Quiz →
-    </button>
-    <p style="margin-top:14px;font-size:0.72rem;color:var(--muted)">
-      Questions are generated fresh by Claude each session. Make sure your API key is saved first.
-    </p>
+    <button class="btn btn-primary" id="startBtn">Start Quiz →</button>
+
+    <!-- FREE MODE: Prompt + JSON paste (shown after Start is clicked) -->
+    <div id="freeModeFlow" style="margin-top:36px">
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:20px" id="promptSection" style="display:none">
+        <div class="section-hdr" style="padding-top:0;margin-bottom:16px">
+          <h2 style="font-size:1.1rem">Step 1 — Copy this prompt</h2>
+          <div class="line"></div>
+        </div>
+        <p style="font-size:.78rem;color:var(--muted2);margin-bottom:12px">
+          Copy the prompt below and paste it into
+          <a href="https://claude.ai/new" target="_blank" style="color:var(--accent)">claude.ai/new</a>
+          (free account). Claude will return a JSON block.
+        </p>
+        <div class="prompt-box" id="promptBox"></div>
+        <div class="copy-row">
+          <button class="btn btn-primary btn-sm" id="copyPromptBtn">Copy Prompt</button>
+          <a href="https://claude.ai/new" target="_blank" class="btn btn-ghost btn-sm">Open Claude.ai ↗</a>
+          <span class="copy-confirm" id="copyConfirm">✓ Copied!</span>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px" id="pasteSection" style="display:none">
+        <div class="section-hdr" style="padding-top:0;margin-bottom:16px">
+          <h2 style="font-size:1.1rem">Step 2 — Paste the JSON response</h2>
+          <div class="line"></div>
+        </div>
+        <p style="font-size:.78rem;color:var(--muted2);margin-bottom:10px">
+          Claude will return a JSON array that starts with <code style="color:var(--accent)">[</code> and ends with <code style="color:var(--accent)">]</code>. Copy the whole thing and paste it below.
+        </p>
+        <textarea class="json-paste" id="jsonPaste" placeholder='Paste the JSON array here, e.g. [{"topic":"...","question":"...",...}, ...]'></textarea>
+        <div class="json-err" id="jsonErr"></div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" id="loadJsonBtn">Load Quiz →</button>
+        </div>
+      </div>
+
+    </div>
+
   </section>
 
-  <!-- ─── QUIZ SCREEN ──────────────────────────────────────── -->
+  <!-- ── QUIZ ───────────────────────────────────────────────── -->
   <section class="quiz-wrap" id="quizWrap">
-
-    <!-- Top bar -->
     <div class="quiz-topbar">
       <div class="quiz-progress">
         <div class="progress-dots" id="progressDots"></div>
       </div>
-      <div class="quiz-score-pill" id="scoreDisplay">Score: <span>0</span></div>
+      <div class="score-pill" id="scoreDisplay">Score: <span>0</span></div>
     </div>
 
-    <!-- Question card -->
     <div class="q-card">
-      <div class="q-number" id="qNumber">Q1</div>
-      <div class="q-topic-pill" id="qTopic">Loading...</div>
-      <div class="q-text loading" id="qText">Generating question...</div>
-
-      <textarea
-        class="answer-area"
-        id="answerArea"
-        placeholder="Write your answer here — aim for the level of detail you'd give in the real exam..."
-        disabled
-      ></textarea>
-
+      <div class="q-meta">
+        <span class="q-num" id="qNum">Q1</span>
+        <span class="q-topic-pill" id="qTopic">Topic</span>
+        <span class="q-paper-pill" id="qPaper">Core Paper 1</span>
+      </div>
+      <div class="q-text" id="qText"></div>
+      <textarea class="answer-area" id="answerArea" placeholder="Write your full answer here — aim for the same depth you'd use in the real exam..."></textarea>
       <div class="q-actions">
-        <button class="btn btn-primary" id="submitBtn" disabled>Submit Answer</button>
+        <button class="btn btn-primary" id="submitBtn">Submit Answer</button>
         <button class="btn btn-ghost hidden" id="nextBtn">Next →</button>
       </div>
 
-      <!-- Feedback panel -->
+      <!-- Feedback -->
       <div class="feedback-panel" id="feedbackPanel">
-        <div class="feedback-header ai">
-          🤖 AI Feedback
-        </div>
-        <div class="feedback-body" id="feedbackBody"></div>
-
-        <div class="model-answer-box">
-          <div class="model-answer-label">Model Answer</div>
+        <div class="fb-header">🤖 Feedback</div>
+        <div class="fb-body" id="fbBody"></div>
+        <div class="model-box">
+          <div class="model-label">Model Answer</div>
           <div id="modelAnswerText"></div>
         </div>
 
-        <div class="self-rate hidden" id="selfRateSection">
-          <p>How well did your answer match?</p>
+        <!-- Free mode: marking prompt -->
+        <div id="markingSection" class="hidden" style="margin-top:20px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:20px">
+          <p style="font-size:.75rem;color:var(--muted2);margin-bottom:10px">
+            <strong style="color:var(--accent)">Optional:</strong> Get AI feedback on your answer. Copy this prompt and paste into Claude.ai.
+          </p>
+          <div class="prompt-box" id="markingPromptBox" style="max-height:120px"></div>
+          <div class="copy-row" style="margin-bottom:12px">
+            <button class="btn btn-ghost btn-sm" id="copyMarkBtn">Copy Marking Prompt</button>
+            <a href="https://claude.ai/new" target="_blank" class="btn btn-ghost btn-sm">Open Claude.ai ↗</a>
+            <span class="copy-confirm" id="copyMarkConfirm">✓ Copied!</span>
+          </div>
+          <p style="font-size:.72rem;color:var(--muted2);margin-bottom:6px">Paste the feedback JSON here (optional):</p>
+          <textarea class="json-paste" id="markJsonPaste" placeholder='{"feedback":"..."}' style="min-height:80px"></textarea>
+          <button class="btn btn-ghost btn-sm" id="loadMarkBtn" style="margin-top:8px">Load Feedback</button>
+        </div>
+
+        <!-- Self rate -->
+        <div class="self-rate hidden" id="selfRate">
+          <p>How did you do?</p>
           <div class="rate-row">
-            <button class="rate-btn" onclick="rateAnswer('good')">✓ Got it</button>
-            <button class="rate-btn" onclick="rateAnswer('partial')">~ Partial</button>
-            <button class="rate-btn" onclick="rateAnswer('fail')">✗ Missed it</button>
+            <button class="rate-btn" onclick="rateAnswer('good', this)">✓ Got it</button>
+            <button class="rate-btn" onclick="rateAnswer('partial', this)">~ Partial</button>
+            <button class="rate-btn" onclick="rateAnswer('fail', this)">✗ Missed it</button>
           </div>
         </div>
       </div>
     </div>
-
   </section>
 
-  <!-- ─── RESULTS SCREEN ───────────────────────────────────── -->
+  <!-- ── RESULTS ────────────────────────────────────────────── -->
   <section class="results-screen" id="resultsScreen">
     <div class="results-hero">
-      <div class="score-label">Your Score</div>
+      <div class="score-label-sm">Your Score</div>
       <div class="score-num" id="scoreBig">0/0</div>
-      <div class="score-msg" id="scoreMsg"></div>
+      <div class="score-msg-txt" id="scoreMsg"></div>
     </div>
-
-    <div class="section-header">
+    <div class="section-hdr">
       <h2>Breakdown</h2>
       <div class="line"></div>
     </div>
-
     <div class="results-grid" id="resultsGrid"></div>
-
     <div class="results-actions">
       <button class="btn btn-primary" onclick="retakeQuiz()">Try again (same topics)</button>
-      <button class="btn btn-ghost" onclick="retryQuiz()">Change topics</button>
+      <button class="btn btn-ghost" onclick="retryQuiz()">Change setup</button>
     </div>
   </section>
 
 </div>
 
-<!-- ─── FOOTER ────────────────────────────────────────────── -->
 <footer>
   <div class="footer-inner">
-    <p>T Level Digital Software Development · Content Area 4 · Pearson Specification</p>
-    <p>Powered by <a href="https://anthropic.com" target="_blank">Claude</a> (Anthropic) · Made by Spect &amp; Claude</p>
-    <span class="footer-tag">v1.0</span>
+    <p>T Level Digital Software Development · Pearson Spec v1.0 · Core Papers 1 &amp; 2</p>
+    <p>Powered by <a href="https://anthropic.com" target="_blank">Claude</a> (Anthropic) · Made with ❤️ by Spect &amp; Claude</p>
+    <span class="footer-tag">v2.0</span>
   </div>
 </footer>
 
-<!-- ─── API KEY MODAL ──────────────────────────────────────── -->
+<!-- API KEY MODAL -->
 <div class="modal-overlay" id="apiModal">
   <div class="modal">
     <button class="modal-close" onclick="closeApiModal()">✕</button>
     <h3>Anthropic API Key</h3>
-    <p class="modal-sub">
-      Your key is stored only in your browser's localStorage — never sent anywhere except directly to Anthropic's API.
-    </p>
+    <p class="modal-sub">Optional. Enables automatic question generation and AI marking. Stored in your browser only — never in the code or GitHub.</p>
     <label for="apiKeyInput">API Key</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
-    <p class="modal-note">
-      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
-      Each quiz uses a small number of API credits (~£0.01–0.05 per session).
-    </p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off"/>
+    <p class="modal-note">Get yours free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.</p>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="saveKeyBtn">Save Key</button>
-      <button class="btn btn-ghost" id="clearKeyBtn">Clear Key</button>
+      <button class="btn btn-primary btn-sm" id="saveKeyBtn">Save Key</button>
+      <button class="btn btn-ghost btn-sm" id="clearKeyBtn">Clear</button>
     </div>
   </div>
 </div>
 
 <script type="module" src="js/app.js"></script>
+<script>
+  // Select all / clear all helpers (need to be global)
+  function selectAll() {
+    document.querySelectorAll('.topic-card').forEach(c => {
+      c.classList.add('selected');
+    });
+    // Re-sync state via existing module — trigger click logic externally not possible,
+    // so we just mark all as selected visually and reset state on next start
+    import('./js/app.js').catch(()=>{});
+    // Simpler: dispatch a custom event the module listens to
+    document.dispatchEvent(new CustomEvent('selectAll'));
+  }
+  function selectNone() {
+    document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
+    document.dispatchEvent(new CustomEvent('selectNone'));
+  }
+</script>
 </body>
 </html>

@@ -1,78 +1,47 @@
 /**
- * app.js — T Level Digital Legislation Quiz
- * Built with Claude (Anthropic) · AI-powered question generation
+ * app.js — T Level Digital Quiz
+ * Dual mode: AI-powered (Anthropic API key) + Free (copy-paste prompt → JSON)
+ * Built by Spect & Claude (Anthropic)
  */
 
 import Config from './config.js';
-
-// ─── TOPIC REGISTRY ──────────────────────────────────────────────────────────
-const TOPICS = [
-  { id: 'gdpr',       name: 'Data Protection / GDPR',         ref: '4.1.3' },
-  { id: 'cma',        name: 'Computer Misuse Act',             ref: '4.1.4' },
-  { id: 'hsa',        name: 'Health & Safety (DSE)',           ref: '4.1.1–2' },
-  { id: 'equality',   name: 'Equality Act',                    ref: '4.1.5' },
-  { id: 'ip',         name: 'Intellectual Property',           ref: '4.1.6' },
-  { id: 'intlaw',     name: 'International Law / Cyberspace',  ref: '4.1.8' },
-  { id: 'bcs',        name: 'BCS Code of Conduct',             ref: '4.2.1–2' },
-  { id: 'aup',        name: 'Acceptable Use Policy',           ref: '4.2.4' },
-  { id: 'standards',  name: 'Industry Standards (ISO/WCAG)',   ref: '4.2.3' },
-  { id: 'impact',     name: 'Legislation Impact on Society',   ref: '4.1.7' },
-];
+import TOPICS from './topics.js';
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-let state = {
-  questions:    [],   // { topic, question, modelAnswer, examinerTip }
-  current:      0,
-  ratings:      [],   // 'good' | 'partial' | 'fail'
-  score:        0,
-  selectedTopics: [],
-  totalQ:       5,
+let S = {
+  questions: [], current: 0, ratings: [], score: 0,
+  selectedTopics: TOPICS.map(t => t.id),
+  totalQ: 5, mode: 'free', // 'free' | 'api'
 };
 
-// ─── DOM REFS ─────────────────────────────────────────────────────────────────
+// ─── DOM ──────────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
 const dom = {
-  topicGrid:      document.getElementById('topicGrid'),
-  qCountInput:    document.getElementById('qCountInput'),
-  startBtn:       document.getElementById('startBtn'),
-  setupSection:   document.getElementById('setupSection'),
-  quizWrap:       document.getElementById('quizWrap'),
-  resultsScreen:  document.getElementById('resultsScreen'),
-
-  progressDots:   document.getElementById('progressDots'),
-  scoreDisplay:   document.getElementById('scoreDisplay'),
-
-  qNumber:        document.getElementById('qNumber'),
-  qTopic:         document.getElementById('qTopic'),
-  qText:          document.getElementById('qText'),
-  answerArea:     document.getElementById('answerArea'),
-
-  submitBtn:      document.getElementById('submitBtn'),
-  nextBtn:        document.getElementById('nextBtn'),
-  feedbackPanel:  document.getElementById('feedbackPanel'),
-  feedbackBody:   document.getElementById('feedbackBody'),
-  modelAnswerText:document.getElementById('modelAnswerText'),
-  selfRateSection:document.getElementById('selfRateSection'),
-
-  scoreBig:       document.getElementById('scoreBig'),
-  scoreMsg:       document.getElementById('scoreMsg'),
-  resultsGrid:    document.getElementById('resultsGrid'),
-
-  apiModal:       document.getElementById('apiModal'),
-  apiKeyInput:    document.getElementById('apiKeyInput'),
-  saveKeyBtn:     document.getElementById('saveKeyBtn'),
-  clearKeyBtn:    document.getElementById('clearKeyBtn'),
-  apiStatusDot:   document.getElementById('apiStatusDot'),
-  apiStatusText:  document.getElementById('apiStatusText'),
+  topicGrid: $('topicGrid'), qCountInput: $('qCountInput'),
+  startBtn: $('startBtn'), setupSection: $('setupSection'),
+  quizWrap: $('quizWrap'), resultsScreen: $('resultsScreen'),
+  progressDots: $('progressDots'), scoreDisplay: $('scoreDisplay'),
+  qNum: $('qNum'), qTopic: $('qTopic'), qPaper: $('qPaper'), qText: $('qText'),
+  answerArea: $('answerArea'), submitBtn: $('submitBtn'), nextBtn: $('nextBtn'),
+  feedbackPanel: $('feedbackPanel'), fbBody: $('fbBody'),
+  modelAnswerText: $('modelAnswerText'), selfRate: $('selfRate'),
+  scoreBig: $('scoreBig'), scoreMsg: $('scoreMsg'), resultsGrid: $('resultsGrid'),
+  apiModal: $('apiModal'), apiKeyInput: $('apiKeyInput'),
+  saveKeyBtn: $('saveKeyBtn'), clearKeyBtn: $('clearKeyBtn'),
+  apiDot: $('apiDot'), apiLabel: $('apiLabel'),
+  tabFree: $('tabFree'), tabApi: $('tabApi'),
+  freePanel: $('freePanel'), apiPanel: $('apiPanel'),
+  promptBox: $('promptBox'), copyPromptBtn: $('copyPromptBtn'), copyConfirm: $('copyConfirm'),
+  jsonPaste: $('jsonPaste'), loadJsonBtn: $('loadJsonBtn'), jsonErr: $('jsonErr'),
+  markingPromptBox: $('markingPromptBox'), copyMarkBtn: $('copyMarkBtn'), copyMarkConfirm: $('copyMarkConfirm'),
+  markJsonPaste: $('markJsonPaste'), loadMarkBtn: $('loadMarkBtn'),
+  markingSection: $('markingSection'),
 };
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 function init() {
   renderTopicGrid();
   updateApiStatus();
-
-  // Pre-select all topics
-  state.selectedTopics = TOPICS.map(t => t.id);
-  document.querySelectorAll('.topic-card').forEach(c => c.classList.add('selected'));
   updateStartBtn();
 
   dom.startBtn.addEventListener('click', startQuiz);
@@ -80,275 +49,280 @@ function init() {
   dom.nextBtn.addEventListener('click', nextQuestion);
   dom.saveKeyBtn.addEventListener('click', saveApiKey);
   dom.clearKeyBtn.addEventListener('click', clearApiKey);
+  dom.copyPromptBtn.addEventListener('click', copyPrompt);
+  dom.loadJsonBtn.addEventListener('click', loadFromJson);
+  dom.copyMarkBtn?.addEventListener('click', copyMarkingPrompt);
+  dom.loadMarkBtn?.addEventListener('click', loadMarkingJson);
   dom.qCountInput.addEventListener('change', () => {
-    state.totalQ = Math.min(20, Math.max(1, parseInt(dom.qCountInput.value) || 5));
-    dom.qCountInput.value = state.totalQ;
+    S.totalQ = Math.min(20, Math.max(1, parseInt(dom.qCountInput.value) || 5));
+    dom.qCountInput.value = S.totalQ;
   });
 }
 
 // ─── TOPIC GRID ───────────────────────────────────────────────────────────────
 function renderTopicGrid() {
-  dom.topicGrid.innerHTML = '';
-  TOPICS.forEach(t => {
-    const card = document.createElement('div');
-    card.className = 'topic-card';
-    card.dataset.id = t.id;
-    card.innerHTML = `
-      <div class="t-check">✓</div>
-      <div class="t-name">${t.name}</div>
-      <div class="t-ref">${t.ref}</div>
-    `;
-    card.addEventListener('click', () => toggleTopic(t.id, card));
-    dom.topicGrid.appendChild(card);
+  const papers = [...new Set(TOPICS.map(t => t.paper))];
+  papers.forEach(paper => {
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'grid-column:1/-1;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent4);padding:8px 0 4px;font-weight:600';
+    hdr.textContent = paper;
+    dom.topicGrid.appendChild(hdr);
+
+    TOPICS.filter(t => t.paper === paper).forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'topic-card selected';
+      card.dataset.id = t.id;
+      card.innerHTML = `<div class="tc-check">✓</div><div class="tc-name">${t.name}</div><div class="tc-ref">${t.ref}</div>`;
+      card.addEventListener('click', () => toggleTopic(t.id, card));
+      dom.topicGrid.appendChild(card);
+    });
   });
 }
 
 function toggleTopic(id, card) {
-  const idx = state.selectedTopics.indexOf(id);
-  if (idx === -1) {
-    state.selectedTopics.push(id);
-    card.classList.add('selected');
-  } else {
-    state.selectedTopics.splice(idx, 1);
-    card.classList.remove('selected');
-  }
+  const i = S.selectedTopics.indexOf(id);
+  if (i === -1) { S.selectedTopics.push(id); card.classList.add('selected'); }
+  else { S.selectedTopics.splice(i, 1); card.classList.remove('selected'); }
   updateStartBtn();
 }
 
 function updateStartBtn() {
-  dom.startBtn.disabled = state.selectedTopics.length === 0 || !Config.hasKey();
-  if (!Config.hasKey()) {
-    dom.startBtn.textContent = '⚠ Add API Key First';
-  } else if (state.selectedTopics.length === 0) {
-    dom.startBtn.textContent = 'Select at least one topic';
-  } else {
-    dom.startBtn.textContent = `Start Quiz →`;
-  }
+  const ok = S.selectedTopics.length > 0;
+  dom.startBtn.disabled = !ok;
+  dom.startBtn.textContent = ok ? 'Start Quiz →' : 'Select at least one topic';
 }
+
+// ─── MODE TABS ────────────────────────────────────────────────────────────────
+window.setMode = function(mode) {
+  S.mode = mode;
+  dom.tabFree.classList.toggle('active', mode === 'free');
+  dom.tabApi.classList.toggle('active', mode === 'api');
+  dom.freePanel.classList.toggle('hidden', mode !== 'free');
+  dom.apiPanel.classList.toggle('hidden', mode !== 'api');
+};
 
 // ─── API KEY MODAL ────────────────────────────────────────────────────────────
-window.openApiModal = function () {
-  dom.apiKeyInput.value = Config.hasKey() ? '••••••••••••••••' : '';
+window.openApiModal = function() {
+  dom.apiKeyInput.value = Config.has() ? '••••••••••••••••' : '';
   dom.apiModal.classList.add('show');
 };
-window.closeApiModal = function () {
-  dom.apiModal.classList.remove('show');
-};
+window.closeApiModal = function() { dom.apiModal.classList.remove('show'); };
 
 function saveApiKey() {
-  const val = dom.apiKeyInput.value.trim();
-  if (!val || val === '••••••••••••••••') { closeApiModal(); return; }
-  if (!val.startsWith('sk-ant-')) {
-    alert('That doesn\'t look like an Anthropic API key. It should start with sk-ant-');
-    return;
-  }
-  Config.setKey(val);
-  updateApiStatus();
-  updateStartBtn();
-  closeApiModal();
+  const v = dom.apiKeyInput.value.trim();
+  if (!v || v === '••••••••••••••••') { closeApiModal(); return; }
+  if (!v.startsWith('sk-ant-')) { alert('API key should start with sk-ant-'); return; }
+  Config.set(v); updateApiStatus(); closeApiModal();
 }
-
-function clearApiKey() {
-  Config.clearKey();
-  dom.apiKeyInput.value = '';
-  updateApiStatus();
-  updateStartBtn();
-}
-
+function clearApiKey() { Config.clear(); dom.apiKeyInput.value = ''; updateApiStatus(); }
 function updateApiStatus() {
-  if (Config.hasKey()) {
-    dom.apiStatusDot.style.background = 'var(--correct)';
-    dom.apiStatusText.textContent = 'API key saved';
-    dom.apiStatusText.style.color = 'var(--correct)';
-  } else {
-    dom.apiStatusDot.style.background = 'var(--wrong)';
-    dom.apiStatusText.textContent = 'No API key';
-    dom.apiStatusText.style.color = 'var(--wrong)';
-  }
+  const ok = Config.has();
+  dom.apiDot.style.background = ok ? 'var(--correct)' : 'var(--wrong)';
+  dom.apiLabel.textContent = ok ? 'API ready' : 'No API key';
+  dom.apiLabel.style.color = ok ? 'var(--correct)' : 'var(--wrong)';
 }
 
-// ─── START QUIZ ───────────────────────────────────────────────────────────────
-async function startQuiz() {
-  if (!Config.hasKey()) { openApiModal(); return; }
+// ─── PROMPT ENGINEERING ───────────────────────────────────────────────────────
+function buildQuizPrompt(topicIds, count) {
+  const selected = TOPICS.filter(t => topicIds.includes(t.id));
+  const topicList = selected.map(t => `- ${t.name} (${t.ref}, ${t.paper}): ${t.desc}`).join('\n');
 
-  state.questions = [];
-  state.current = 0;
-  state.ratings = [];
-  state.score = 0;
-  state.totalQ = parseInt(dom.qCountInput.value) || 5;
+  return `You are an expert examiner for the Pearson T Level Technical Qualification in Digital Software Development (Level 3).
 
-  // Show quiz screen
-  dom.setupSection.classList.add('hidden');
-  dom.quizWrap.classList.add('active');
-  dom.resultsScreen.classList.remove('active');
+Generate exactly ${count} exam-style questions covering the topics listed below.
+Questions should require detailed written answers — NOT multiple choice.
+Vary question styles: "Explain...", "Describe FOUR...", "Compare X and Y...", "A company has done X, evaluate...", "State and explain THREE..."
 
-  // Build progress dots
-  dom.progressDots.innerHTML = '';
-  for (let i = 0; i < state.totalQ; i++) {
-    const d = document.createElement('div');
-    d.className = 'dot' + (i === 0 ? ' current' : '');
-    dom.progressDots.appendChild(d);
-  }
-  dom.scoreDisplay.innerHTML = `Score: <span>0</span>`;
+TOPICS TO DRAW FROM:
+${topicList}
 
-  // Generate first question then eagerly generate rest in background
-  await loadQuestion(0);
-  prefetchRemaining();
-}
-
-// ─── QUESTION GENERATION ──────────────────────────────────────────────────────
-async function generateQuestion(topicIds) {
-  const pick = topicIds[Math.floor(Math.random() * topicIds.length)];
-  const topic = TOPICS.find(t => t.id === pick);
-
-  const topicDescriptions = {
-    gdpr:      'Data Protection Act / GDPR: the 8 principles, rights of data subjects, ICO, breach consequences, 72-hour notification, fines (4% global turnover or £17.5m)',
-    cma:       'Computer Misuse Act 1990: the 3 offences (S1 unauthorised access, S2 intent to commit further offences, S3 unauthorised modification), penalties, employer/employee consequences',
-    hsa:       'Health & Safety at Work Act and Display Screen Equipment (DSE) regulations: employer obligations, workstation assessments, breaks, eye tests, training',
-    equality:  'Equality Act 2010: 9 protected characteristics, 4 types of discrimination (direct, indirect, harassment, victimisation), time limits for claims',
-    ip:        'Intellectual Property: registered designs, unregistered designs, patents — differences in protection, registration, duration, and relevance to software developers',
-    intlaw:    'International law in cyberspace: Budapest Convention, cross-border cyber offences, international surveillance law, GDPR applying globally',
-    bcs:       'BCS Code of Conduct and professional codes from IAP and CIISec: public interest, competence, integrity, duty to employer/client, confidentiality',
-    aup:       'Acceptable Use Policies: purpose, permitted activities, prohibited activities, confidentiality, communication etiquette, sanctions',
-    standards: 'Digital industry standards: ISO, WCAG (Web Content Accessibility Guidelines), W3C, IETF, PCI SSC, IEEE — purpose and relevance',
-    impact:    'Interrelationship between digital legislation and software development: impact on organisations, individuals, and society — extended evaluative response',
-  };
-
-  const alreadyAsked = state.questions.map(q => q.rawTopic).filter(Boolean);
-  const avoidNote = alreadyAsked.length ? `\nIMPORTANT: Do NOT ask about these topics again: ${alreadyAsked.join(', ')}.` : '';
-
-  const systemPrompt = `You are an expert examiner for the Pearson T Level Technical Qualification in Digital Software Development (Level 3), Content Area 4: Legislation and Regulatory Requirements.
-
-You generate exam-style questions that require detailed, explanatory answers — not multiple choice. Questions should vary in style:
-- "Explain the difference between X and Y"
-- "A company has done X. Describe FOUR consequences..."
-- "Evaluate how [legislation] affects [stakeholders]..."
-- "State and explain THREE [things] under [act]..."
-
-Always return valid JSON only. No markdown, no backticks, no preamble.`;
-
-  const userPrompt = `Generate ONE exam question about: ${topicDescriptions[pick]}
-${avoidNote}
-
-Return this exact JSON structure:
+CRITICAL: Respond with ONLY a valid JSON array. No markdown, no backticks, no explanation, no preamble.
+The array must contain exactly ${count} objects, each with this exact structure:
 {
-  "topic": "${topic.name}",
-  "question": "The full exam question text",
-  "modelAnswer": "A thorough model answer a student should aim for (4-8 sentences, covering key points)",
-  "examinerTip": "A brief tip about what examiners specifically look for (1-2 sentences)"
-}`;
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': Config.getKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API error ${response.status}`);
-  }
-
-  const data = await response.json();
-  const raw = data.content[0].text.trim();
-  const parsed = JSON.parse(raw);
-  parsed.rawTopic = pick;
-  return parsed;
+  "topic": "exact topic name from the list above",
+  "paper": "Core Paper 1 or Core Paper 2",
+  "question": "the full exam question text",
+  "modelAnswer": "a thorough model answer covering key points (4-8 sentences)",
+  "examinerTip": "one sentence on what examiners specifically look for"
 }
 
-// ─── GRADING ──────────────────────────────────────────────────────────────────
-async function gradeAnswer(question, answer) {
-  const prompt = `You are a T Level Digital examiner. Grade this student's response.
+Return ONLY the JSON array starting with [ and ending with ]. Nothing else.`;
+}
+
+function buildMarkingPrompt(question, answer) {
+  return `You are a T Level Digital examiner marking a student's written answer.
 
 QUESTION: ${question.question}
 MODEL ANSWER KEY POINTS: ${question.modelAnswer}
 STUDENT'S ANSWER: ${answer}
 
-Provide brief, specific feedback (2-3 sentences) that:
+Provide feedback in 2-3 sentences that:
 1. Acknowledges what they got right
-2. Points out what was missing or could be improved
-3. References the mark scheme criteria
+2. Points out the most important missing point
+3. Gives one specific improvement tip
 
-Be encouraging but honest. Return plain text only — no markdown, no bullet points, no lists. Just 2-3 sentences of feedback.`;
+CRITICAL: Respond with ONLY a valid JSON object. No markdown, no backticks, no preamble.
+Use this exact structure:
+{"feedback": "your 2-3 sentence feedback here"}
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+Return ONLY the JSON object. Nothing else.`;
+}
+
+// ─── FREE MODE — PROMPT COPY ──────────────────────────────────────────────────
+function generateAndShowPrompt() {
+  const prompt = buildQuizPrompt(S.selectedTopics, S.totalQ);
+  dom.promptBox.textContent = prompt;
+}
+
+function copyPrompt() {
+  const text = dom.promptBox.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    dom.copyConfirm.classList.add('show');
+    setTimeout(() => dom.copyConfirm.classList.remove('show'), 2000);
+  });
+}
+
+function loadFromJson() {
+  const raw = dom.jsonPaste.value.trim();
+  dom.jsonErr.style.display = 'none';
+  if (!raw) { showJsonErr('Please paste the JSON from Claude first.'); return; }
+
+  try {
+    let cleaned = raw.replace(/```json|```/g, '').trim();
+    // Find the JSON array even if there's surrounding text
+    const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (!arrMatch) throw new Error('No JSON array found');
+    const parsed = JSON.parse(arrMatch[0]);
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Expected a JSON array');
+    if (!parsed[0].question) throw new Error('Questions missing required fields');
+
+    S.questions = parsed;
+    S.totalQ = parsed.length;
+    launchQuiz();
+  } catch (e) {
+    showJsonErr(`Invalid JSON: ${e.message}. Make sure you copied the full response from Claude.`);
+  }
+}
+
+function showJsonErr(msg) {
+  dom.jsonErr.textContent = msg;
+  dom.jsonErr.style.display = 'block';
+}
+
+// ─── API MODE ─────────────────────────────────────────────────────────────────
+async function generateViaApi(topicIds, count) {
+  const prompt = buildQuizPrompt(topicIds, count);
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': Config.getKey(),
+      'x-api-key': Config.get(),
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 300,
+      max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `API ${res.status}`); }
+  const data = await res.json();
+  const raw = data.content[0].text.trim();
+  const arrMatch = raw.match(/\[[\s\S]*\]/);
+  if (!arrMatch) throw new Error('No JSON array in response');
+  return JSON.parse(arrMatch[0]);
+}
 
-  if (!response.ok) return null;
-  const data = await response.json();
-  return data.content[0].text.trim();
+async function gradeViaApi(question, answer) {
+  const prompt = buildMarkingPrompt(question, answer);
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': Config.get(),
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const raw = data.content[0].text.trim();
+  try {
+    const obj = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    return obj.feedback || null;
+  } catch { return raw; }
+}
+
+// ─── START QUIZ ───────────────────────────────────────────────────────────────
+async function startQuiz() {
+  S.totalQ = parseInt(dom.qCountInput.value) || 5;
+
+  if (S.mode === 'free') {
+    generateAndShowPrompt();
+    showFreeModeFlow();
+    setTimeout(() => dom.promptBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    return;
+  }
+
+  // API mode
+  if (!Config.has()) { openApiModal(); return; }
+
+  dom.startBtn.disabled = true;
+  dom.startBtn.textContent = 'Generating questions...';
+
+  try {
+    S.questions = await generateViaApi(S.selectedTopics, S.totalQ);
+    S.current = 0; S.ratings = []; S.score = 0;
+    launchQuiz();
+  } catch (e) {
+    dom.startBtn.disabled = false;
+    dom.startBtn.textContent = 'Start Quiz →';
+    alert(`Failed to generate questions: ${e.message}`);
+  }
+}
+
+function launchQuiz() {
+  S.current = 0; S.ratings = []; S.score = 0;
+  dom.setupSection.classList.add('hidden');
+  dom.quizWrap.classList.add('active');
+  dom.resultsScreen.classList.remove('active');
+
+  // Build dots
+  dom.progressDots.innerHTML = '';
+  for (let i = 0; i < S.totalQ; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' current' : '');
+    dom.progressDots.appendChild(d);
+  }
+  dom.scoreDisplay.innerHTML = `Score: <span>0</span>`;
+  loadQuestion(0);
 }
 
 // ─── LOAD QUESTION ────────────────────────────────────────────────────────────
-async function loadQuestion(index) {
-  dom.qText.className = 'q-text loading';
-  dom.qText.textContent = 'Generating question...';
-  dom.qTopic.textContent = '...';
-  dom.qNumber.textContent = `Q${index + 1} of ${state.totalQ}`;
+function loadQuestion(idx) {
+  const q = S.questions[idx];
+  dom.qNum.textContent = `Q${idx + 1} of ${S.totalQ}`;
+  dom.qTopic.textContent = q.topic;
+  dom.qPaper.textContent = q.paper || '';
+  dom.qText.className = 'q-text';
+  dom.qText.textContent = q.question;
   dom.answerArea.value = '';
-  dom.answerArea.disabled = true;
-  dom.submitBtn.disabled = true;
+  dom.answerArea.disabled = false;
+  dom.answerArea.focus();
+  dom.submitBtn.disabled = false;
+  dom.submitBtn.textContent = 'Submit Answer';
   dom.nextBtn.classList.add('hidden');
   dom.feedbackPanel.classList.remove('show');
-  dom.selfRateSection.classList.add('hidden');
-
-  try {
-    // Use pre-fetched question if available, else generate
-    let q = state.questions[index];
-    if (!q) {
-      q = await generateQuestion(state.selectedTopics);
-      state.questions[index] = q;
-    }
-
-    dom.qText.className = 'q-text';
-    dom.qText.textContent = q.question;
-    dom.qTopic.textContent = q.topic;
-    dom.answerArea.disabled = false;
-    dom.submitBtn.disabled = false;
-    dom.answerArea.focus();
-
-  } catch (err) {
-    dom.qText.className = 'q-text';
-    dom.qText.textContent = '⚠ Failed to generate question. Check your API key and try again.';
-    dom.qText.style.color = 'var(--wrong)';
-    console.error(err);
-  }
-}
-
-async function prefetchRemaining() {
-  for (let i = 1; i < state.totalQ; i++) {
-    if (!state.questions[i]) {
-      try {
-        const q = await generateQuestion(state.selectedTopics);
-        state.questions[i] = q;
-      } catch (e) {
-        // Will be generated on-demand when reached
-      }
-      await new Promise(r => setTimeout(r, 300)); // Stagger calls
-    }
-  }
+  if (dom.markingSection) dom.markingSection.classList.add('hidden');
+  if (dom.selfRate) dom.selfRate.classList.add('hidden');
+  document.querySelectorAll('.rate-btn').forEach(b => b.className = 'rate-btn');
 }
 
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────
@@ -360,110 +334,133 @@ async function handleSubmit() {
   dom.submitBtn.disabled = true;
   dom.submitBtn.textContent = 'Marking...';
 
-  const q = state.questions[state.current];
-
-  // Show feedback panel with loading state
+  const q = S.questions[S.current];
   dom.feedbackPanel.classList.add('show');
-  dom.feedbackBody.innerHTML = '<span style="color:var(--muted)">Getting feedback...</span>';
-  dom.modelAnswerText.textContent = q.modelAnswer;
-  if (q.examinerTip) {
-    dom.modelAnswerText.textContent += `\n\n💡 Examiner tip: ${q.examinerTip}`;
+  dom.modelAnswerText.textContent = q.modelAnswer + (q.examinerTip ? `\n\n💡 Tip: ${q.examinerTip}` : '');
+
+  if (S.mode === 'api' && Config.has()) {
+    // Auto-grade
+    dom.fbBody.innerHTML = '<span style="color:var(--muted)">Getting feedback...</span>';
+    const fb = await gradeViaApi(q, answer);
+    dom.fbBody.textContent = fb || 'Compare your answer to the model answer below.';
+    dom.selfRate.classList.remove('hidden');
+  } else {
+    // Free mode — show marking prompt for manual feedback
+    dom.fbBody.textContent = 'Paste your answer into Claude to get feedback, OR self-mark against the model answer below.';
+    if (dom.markingSection) {
+      const mp = buildMarkingPrompt(q, answer);
+      dom.markingPromptBox.textContent = mp;
+      dom.markingSection.classList.remove('hidden');
+    }
+    dom.selfRate.classList.remove('hidden');
   }
 
-  const feedback = await gradeAnswer(q, answer);
-  dom.feedbackBody.innerHTML = feedback
-    ? feedback
-    : 'Compare your answer to the model answer below.';
-
-  dom.selfRateSection.classList.remove('hidden');
   dom.submitBtn.textContent = 'Submit Answer';
   dom.nextBtn.classList.remove('hidden');
-
-  // Scroll to feedback
   dom.feedbackPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// ─── FREE MODE MARKING PROMPT ─────────────────────────────────────────────────
+function copyMarkingPrompt() {
+  if (!dom.markingPromptBox) return;
+  navigator.clipboard.writeText(dom.markingPromptBox.textContent).then(() => {
+    if (dom.copyMarkConfirm) {
+      dom.copyMarkConfirm.classList.add('show');
+      setTimeout(() => dom.copyMarkConfirm.classList.remove('show'), 2000);
+    }
+  });
+}
+
+function loadMarkingJson() {
+  if (!dom.markJsonPaste) return;
+  const raw = dom.markJsonPaste.value.trim();
+  try {
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    const fb = parsed.feedback || parsed.text || cleaned;
+    dom.fbBody.textContent = fb;
+    dom.markingSection.classList.add('hidden');
+  } catch {
+    // Just show the raw text
+    dom.fbBody.textContent = raw;
+    dom.markingSection.classList.add('hidden');
+  }
+}
+
 // ─── RATING ───────────────────────────────────────────────────────────────────
-window.rateAnswer = function(level) {
-  // Remove previous selection
+window.rateAnswer = function(level, btn) {
   document.querySelectorAll('.rate-btn').forEach(b => b.className = 'rate-btn');
   const map = { good: 'g', partial: 'p', fail: 'f' };
-  event.currentTarget.className = `rate-btn ${map[level]}`;
-
-  state.ratings[state.current] = level;
+  btn.className = `rate-btn ${map[level]}`;
+  S.ratings[S.current] = level;
 };
 
-// ─── NEXT QUESTION ────────────────────────────────────────────────────────────
+// ─── NEXT ─────────────────────────────────────────────────────────────────────
 function nextQuestion() {
-  const rating = state.ratings[state.current];
+  const rating = S.ratings[S.current];
   if (!rating) {
-    // Gently remind
-    dom.selfRateSection.querySelector('p').textContent = '← Please rate your answer first';
-    dom.selfRateSection.querySelector('p').style.color = 'var(--accent2)';
+    dom.selfRate.querySelector('p').textContent = '← Rate your answer first';
+    dom.selfRate.querySelector('p').style.color = 'var(--accent2)';
     return;
   }
+  if (rating === 'good') S.score += 2;
+  if (rating === 'partial') S.score += 1;
 
-  // Update score
-  if (rating === 'good')    state.score += 2;
-  if (rating === 'partial') state.score += 1;
-
-  // Update dots
   const dots = dom.progressDots.querySelectorAll('.dot');
-  dots[state.current].classList.remove('current');
-  dots[state.current].classList.add('done');
+  dots[S.current].classList.remove('current');
+  dots[S.current].classList.add('done');
+  S.current++;
+  dom.scoreDisplay.innerHTML = `Score: <span>${S.score}</span>`;
 
-  state.current++;
-  dom.scoreDisplay.innerHTML = `Score: <span>${state.score}</span>`;
-
-  if (state.current >= state.totalQ) {
-    showResults();
-    return;
-  }
-
-  if (state.current < dots.length) {
-    dots[state.current].classList.add('current');
-  }
-
-  loadQuestion(state.current);
+  if (S.current >= S.totalQ) { showResults(); return; }
+  dots[S.current].classList.add('current');
+  loadQuestion(S.current);
 }
 
 // ─── RESULTS ─────────────────────────────────────────────────────────────────
 function showResults() {
   dom.quizWrap.classList.remove('active');
   dom.resultsScreen.classList.add('active');
-
-  const max = state.totalQ * 2;
-  const pct = Math.round((state.score / max) * 100);
-  dom.scoreBig.textContent = `${state.score}/${max}`;
-
-  let msg = '';
-  if (pct >= 80) msg = '🔥 Excellent — solid exam readiness';
-  else if (pct >= 60) msg = '✓ Good — a few areas to revisit';
-  else if (pct >= 40) msg = '⚠ Keep going — review the topics you missed';
-  else msg = '📚 Study mode — use the model answers as revision notes';
-  dom.scoreMsg.textContent = msg;
+  const max = S.totalQ * 2;
+  const pct = Math.round((S.score / max) * 100);
+  dom.scoreBig.textContent = `${S.score}/${max}`;
+  const msgs = [[80,'🔥 Excellent — strong exam readiness'],[60,'✓ Good — a few areas to revisit'],[40,'⚠ Keep going — focus on the weak spots'],[0,'📚 Study mode — use model answers as revision notes']];
+  dom.scoreMsg.textContent = msgs.find(([t]) => pct >= t)[1];
 
   dom.resultsGrid.innerHTML = '';
-  state.questions.forEach((q, i) => {
-    const r = state.ratings[i] || 'fail';
-    const map = { good: ['g', '✓ Got it (+2)'], partial: ['p', '~ Partial (+1)'], fail: ['f', '✗ Missed (+0)'] };
+  S.questions.forEach((q, i) => {
+    const r = S.ratings[i] || 'fail';
+    const map = { good: ['g','✓ Got it (+2)'], partial: ['p','~ Partial (+1)'], fail: ['f','✗ Missed (+0)'] };
     const [cls, label] = map[r];
     const div = document.createElement('div');
     div.className = 'result-item';
-    div.innerHTML = `<div class="ri-topic">${q?.topic || '?'}</div><div class="ri-verdict ${cls}">${label}</div>`;
+    div.innerHTML = `<div class="ri-topic">${q.topic}</div><div class="ri-paper">${q.paper||''}</div><div class="ri-verdict ${cls}">${label}</div>`;
     dom.resultsGrid.appendChild(div);
   });
 }
 
-window.retryQuiz = function() {
-  dom.resultsScreen.classList.remove('active');
-  dom.setupSection.classList.remove('hidden');
-};
+window.retryQuiz = () => { dom.resultsScreen.classList.remove('active'); dom.setupSection.classList.remove('hidden'); };
+window.retakeQuiz = () => { dom.resultsScreen.classList.remove('active'); startQuiz(); };
 
-window.retakeQuiz = function() {
-  dom.resultsScreen.classList.remove('active');
-  startQuiz();
-};
+// ─── SELECT ALL / NONE ────────────────────────────────────────────────────────
+document.addEventListener('selectAll', () => {
+  S.selectedTopics = TOPICS.map(t => t.id);
+  document.querySelectorAll('.topic-card').forEach(c => c.classList.add('selected'));
+  updateStartBtn();
+});
+document.addEventListener('selectNone', () => {
+  S.selectedTopics = [];
+  document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
+  updateStartBtn();
+});
+
+// ─── FREE MODE FLOW VISIBILITY ────────────────────────────────────────────────
+function showFreeModeFlow() {
+  const ps = document.getElementById('promptSection');
+  const pa = document.getElementById('pasteSection');
+  if (ps) ps.style.display = 'block';
+  if (pa) pa.style.display = 'block';
+}
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
